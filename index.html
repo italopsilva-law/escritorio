@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prazos · DJEN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#171b26; --ink-2:#232838; --paper:#f4f2ee; --card:#ffffff;
+    --line:#e3ded5; --text:#20242e; --muted:#6b7280;
+    --venc:#a4231c; --urg:#a86200; --fut:#2c6a4c; --conf:#5b4b8a;
+    --neutral:#8a8f99; --accent:#0f5c6b;
+    --venc-bg:#fbecea; --urg-bg:#fbf2e2; --fut-bg:#e9f3ec; --conf-bg:#eeeaf6;
+    --shadow:0 1px 2px rgba(20,22,30,.06),0 2px 8px rgba(20,22,30,.05);
+    --serif:'Spectral',Georgia,serif; --sans:'Inter',system-ui,sans-serif; --mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5}
+  a{color:var(--accent)}
+  button{font-family:var(--sans);cursor:pointer;border:none;border-radius:7px;font-weight:500}
+  button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+  header{background:var(--ink);color:#f4f2ee;padding:18px 26px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  header .brand{font-family:var(--serif);font-weight:700;font-size:20px;letter-spacing:.2px}
+  header .brand small{font-family:var(--sans);font-weight:400;color:#9aa2b4;font-size:12px;margin-left:10px;letter-spacing:.3px;text-transform:uppercase}
+  header .spacer{flex:1}
+  header .tools{display:flex;gap:9px;align-items:center}
+  header input.search{background:var(--ink-2);border:1px solid #2f3547;color:#eef;padding:8px 12px;border-radius:7px;width:210px;font-size:13px}
+  header input.search::placeholder{color:#7a8296}
+  .btn{padding:8px 14px;font-size:13px}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-ghost{background:#2a3042;color:#dfe4ee}
+  .btn-primary:hover{filter:brightness(1.08)} .btn-ghost:hover{background:#333a4f}
+
+  .wrap{display:grid;grid-template-columns:212px 1fr;gap:0;min-height:calc(100vh - 62px)}
+  aside{border-right:1px solid var(--line);padding:22px 16px;background:#faf9f6}
+  aside h3{font-family:var(--sans);font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin:0 0 12px 4px}
+  .bucket{display:flex;align-items:center;gap:9px;width:100%;background:none;text-align:left;padding:9px 10px;border-radius:8px;color:var(--text);font-size:13.5px;margin-bottom:3px}
+  .bucket:hover{background:#efece5}
+  .bucket.active{background:#eae6dd;font-weight:600}
+  .bucket .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .bucket .n{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .dot.venc{background:var(--venc)} .dot.urg{background:var(--urg)} .dot.fut{background:var(--fut)}
+  .dot.conf{background:var(--conf)} .dot.sem{background:var(--neutral)} .dot.cump{background:#b8bcc4}
+
+  main{padding:24px 28px}
+  .groupttl{font-family:var(--serif);font-size:16px;font-weight:600;margin:6px 0 12px;display:flex;align-items:baseline;gap:10px}
+  .groupttl .count{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:400}
+  .groupttl .bar{height:2px;flex:1;background:var(--line);border-radius:2px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:11px;padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .card.venc{border-left-color:var(--venc)} .card.urg{border-left-color:var(--urg)}
+  .card.fut{border-left-color:var(--fut)} .card.a_confirmar{border-left-color:var(--conf)}
+  .card.sem_prazo{border-left-color:var(--neutral)} .card.cumprido{border-left-color:#b8bcc4;opacity:.72}
+
+  .row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .proc{font-family:var(--mono);font-size:13px;font-weight:500}
+  .trib{font-size:12px;color:var(--muted)}
+  .badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;letter-spacing:.2px}
+  .badge.tipo{background:#eef0f4;color:#3a4152}
+  .badge.conf-alta{background:var(--fut-bg);color:var(--fut)}
+  .badge.conf-media{background:var(--urg-bg);color:var(--urg)}
+  .badge.conf-baixa{background:var(--venc-bg);color:var(--venc)}
+  .manif{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--conf-bg);color:var(--conf)}
+
+  .chip{margin-left:auto;display:flex;align-items:center;gap:8px;padding:5px 12px;border-radius:9px;font-weight:600;font-size:13px}
+  .chip .d{font-family:var(--mono)}
+  .chip.venc{background:var(--venc-bg);color:var(--venc)} .chip.urg{background:var(--urg-bg);color:var(--urg)}
+  .chip.fut{background:var(--fut-bg);color:var(--fut)} .chip.none{background:#f0f0f2;color:var(--muted)}
+
+  .resumo{font-size:14px;margin:2px 0 8px}
+  details.fund{margin:0 0 10px}
+  details.fund summary{cursor:pointer;color:var(--accent);font-size:12.5px;list-style:none}
+  details.fund summary::-webkit-details-marker{display:none}
+  details.fund summary::before{content:'▸ ';color:var(--muted)}
+  details.fund[open] summary::before{content:'▾ '}
+  .fund .body{margin-top:7px;padding:10px 12px;background:#faf9f6;border-radius:8px;font-size:13px;color:#3a3f4a}
+  .fund .body .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .teor{white-space:pre-wrap;font-size:12.5px;color:#4a4f5a;max-height:150px;overflow:auto;margin-top:8px}
+
+  .controls{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .field input[type=date]{font-family:var(--mono);font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:#fff}
+  .field textarea{font-family:var(--sans);font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;resize:vertical;min-width:240px;min-height:38px}
+  .actions{display:flex;gap:7px;margin-left:auto}
+  .btn-sm{padding:7px 12px;font-size:12.5px}
+  .btn-save{background:var(--ink);color:#fff}
+  .btn-cal{background:#e9f3ec;color:var(--fut);border:1px solid #cfe6d7}
+  .btn-done{background:#f1f0f4;color:#4a4f5a;border:1px solid var(--line)}
+  .btn-sm:hover{filter:brightness(.97)}
+
+  .empty{text-align:center;color:var(--muted);padding:60px 20px;font-family:var(--serif);font-size:17px}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:9px;font-size:13.5px;box-shadow:0 6px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+  .setup{max-width:640px;margin:80px auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:28px 32px;box-shadow:var(--shadow)}
+  .setup h2{font-family:var(--serif);margin-top:0}
+  .setup code{background:#f4f2ee;padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:12.5px}
+
+  header .nav{display:flex;gap:4px;margin-left:8px}
+  .navbtn{background:transparent;color:#aab2c4;padding:7px 14px;font-size:13.5px;border-radius:7px}
+  .navbtn:hover{color:#eef;background:#242a3b}
+  .navbtn.active{background:#2a3042;color:#fff;font-weight:600}
+
+  .home{max-width:820px;margin:0 auto;padding:26px 24px}
+  .home-acoes{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin-bottom:26px;box-shadow:var(--shadow)}
+  .home-acoes h2{font-family:var(--serif);font-size:18px;margin:0 0 4px}
+  .home-acoes .sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+  .acoes-row{display:flex;gap:10px;flex-wrap:wrap}
+  .obtn{background:var(--accent);color:#fff;padding:10px 16px;font-size:13.5px;font-weight:600}
+  .obtn:hover{filter:brightness(1.08)}
+  .obtn.sec{background:#eef1f4;color:#3a4152}
+  .obtn.sec:hover{background:#e4e8ee;filter:none}
+
+  @media (max-width:760px){ .wrap{grid-template-columns:1fr} aside{display:none} .chip{margin-left:0} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">Prazos<small>DJEN · OAB/RJ 205.534</small></div>
+  <nav class="nav">
+    <button class="navbtn" data-view="inicio">Início</button>
+    <button class="navbtn" data-view="registro">Registro</button>
+  </nav>
+  <div class="spacer"></div>
+  <div class="tools">
+    <input class="search" id="q" placeholder="Buscar processo, órgão, texto…">
+    <button class="btn btn-primary" id="btnReload">Atualizar</button>
+  </div>
+</header>
+
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================== CONFIGURE AQUI ==================
+   Cole a URL do app da Web do Apps Script (Implantar → Novo → App da Web,
+   "Executar como: você", "Acesso: qualquer pessoa"). Termina em /exec */
+const API_URL = 'https://script.google.com/macros/s/AKfycbzrizzpTrKsoTE_574mGwbD-VB_-qf9H3RJTDq4SUbcDuGhKPTpxb5ZU0IxErYiEyJj/exec';
+/* =================================================== */
+
+const BUCKETS = [
+  { key:'vencido',     rot:'Vencidos',     dot:'venc', card:'venc' },
+  { key:'urgente',     rot:'Urgentes (≤3d)',dot:'urg', card:'urg' },
+  { key:'a_confirmar', rot:'A confirmar',  dot:'conf', card:'a_confirmar' },
+  { key:'futuro',      rot:'Futuros',      dot:'fut',  card:'fut' },
+  { key:'sem_prazo',   rot:'Sem prazo',    dot:'sem',  card:'sem_prazo' },
+  { key:'cumprido',    rot:'Cumpridos',    dot:'cump', card:'cumprido' },
+];
+
+let DADOS = [], HOJE = null, FILTRO = null, BUSCA = '', VIEW = 'inicio';
+
+// Senha guardada só na sessão do navegador (some ao fechar a aba); nunca no código.
+function getToken(){
+  let t = sessionStorage.getItem('djen_token');
+  if(!t){ t = prompt('Senha de acesso ao painel:') || ''; if(t) sessionStorage.setItem('djen_token', t); }
+  return t;
+}
+function limparToken(){ sessionStorage.removeItem('djen_token'); }
+
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+function esc(s){ return String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function diasEntre(a,b){ if(!a||!b) return null; return Math.round((new Date(b)-new Date(a))/864e5); }
+
+async function carregar(){
+  if(API_URL.indexOf('COLE_AQUI')===0){ renderSetup(); return; }
+  try{
+    const r = await fetch(API_URL + '?token=' + encodeURIComponent(getToken()));
+    const j = await r.json();
+    if(j.ok===false && /autoriz/i.test(j.erro||'')){ limparToken(); toast('Senha incorreta'); return carregar(); }
+    DADOS = j.publicacoes||[]; HOJE = j.hoje;
+    render();
+  }catch(e){ document.getElementById('app').innerHTML='<div class="empty">Não foi possível carregar. Confira a URL da API e a implantação.</div>'; }
+}
+
+async function acao(payload){
+  payload.token = getToken();
+  const r = await fetch(API_URL, { method:'POST', body: JSON.stringify(payload) }); // text/plain: sem preflight
+  const j = await r.json();
+  if(j.ok===false && /autoriz/i.test(j.erro||'')){ limparToken(); toast('Senha incorreta'); }
+  return j;
+}
+
+function cardStatus(p){ return p.status || (p.cabe_manifestacao===true?'a_confirmar':'sem_prazo'); }
+function prazoEfetivo(p){ return String(p.prazo_fim_ajustado||p.prazo_fim_calculado||'').substring(0,10); }
+
+function render(){
+  const app = document.getElementById('app');
+  document.querySelectorAll('.navbtn').forEach(b=> b.classList.toggle('active', b.dataset.view===VIEW));
+  document.getElementById('q').style.display = VIEW==='registro' ? '' : 'none';
+  if(VIEW==='inicio') renderInicio(app); else renderRegistro(app);
+}
+
+function wireCards(scope){
+  scope.querySelectorAll('[data-save]').forEach(btn=> btn.onclick=()=>salvar(btn.dataset.save));
+  scope.querySelectorAll('[data-cal]').forEach(btn=> btn.onclick=()=>exportar(btn.dataset.cal));
+  scope.querySelectorAll('[data-done]').forEach(btn=> btn.onclick=()=>concluir(btn.dataset.done));
+}
+
+function renderInicio(app){
+  // Próximos prazos: em aberto (não cumpridos), com data, ordenados do mais próximo.
+  const prox = DADOS
+    .filter(p=> cardStatus(p)!=='cumprido' && prazoEfetivo(p))
+    .sort((a,b)=> prazoEfetivo(a).localeCompare(prazoEfetivo(b)))
+    .slice(0,3);
+
+  const acoes = `<section class="home-acoes">
+    <h2>Buscar no DJEN</h2>
+    <p class="sub">OAB/RJ 205.534 — compara com a base, inclui o que estiver faltando e já classifica com IA.</p>
+    <div class="acoes-row">
+      <button class="obtn" data-dias="30">Últimos 30 dias</button>
+      <button class="obtn sec" data-dias="15">Últimos 15 dias</button>
+      <button class="obtn sec" data-dias="1">Só hoje</button>
+    </div>
+  </section>`;
+
+  const lista = prox.length
+    ? prox.map(cardHtml).join('')
+    : `<div class="empty">Sem prazos em aberto. ${DADOS.length?'':'Faça uma busca acima para popular a base.'}</div>`;
+
+  app.innerHTML = `<div class="home">
+    ${acoes}
+    <div class="groupttl">Próximos prazos<span class="count">3 mais próximos</span><span class="bar"></span></div>
+    ${lista}
+  </div>`;
+
+  app.querySelectorAll('.obtn').forEach(b=> b.onclick=()=> sincronizarPeriodo(Number(b.dataset.dias)));
+  wireCards(app);
+}
+
+function renderRegistro(app){
+  const counts = {}; BUCKETS.forEach(b=>counts[b.key]=0);
+  DADOS.forEach(p=>{ const s=cardStatus(p); if(counts[s]!==undefined) counts[s]++; });
+
+  let filtrados = DADOS.filter(p=>{
+    if(FILTRO && cardStatus(p)!==FILTRO) return false;
+    if(BUSCA){ const hay=(p.numero_processo+' '+p.orgao+' '+p.tribunal+' '+p.resumo+' '+p.texto).toLowerCase(); if(!hay.includes(BUSCA)) return false; }
+    return true;
+  });
+
+  const aside = `<aside>
+    <h3>Situação</h3>
+    ${BUCKETS.map(b=>`<button class="bucket ${FILTRO===b.key?'active':''}" data-b="${b.key}">
+      <span class="dot ${b.dot}"></span>${b.rot}<span class="n">${counts[b.key]}</span></button>`).join('')}
+    <button class="bucket ${FILTRO===null?'active':''}" data-b="__all" style="margin-top:8px">
+      <span class="dot" style="background:var(--ink)"></span>Todas<span class="n">${DADOS.length}</span></button>
+  </aside>`;
+
+  let mainHtml = '';
+  if(!filtrados.length){
+    mainHtml = `<main><div class="empty">Nada aqui. ${DADOS.length? 'Ajuste o filtro ou a busca.' : 'Vá em Início e faça uma busca no DJEN.'}</div></main>`;
+  } else {
+    const ordem = ['vencido','urgente','a_confirmar','futuro','sem_prazo','cumprido'];
+    const grupos = {};
+    filtrados.forEach(p=>{ const s=cardStatus(p); (grupos[s]=grupos[s]||[]).push(p); });
+    mainHtml = '<main>';
+    ordem.forEach(k=>{
+      if(!grupos[k]) return;
+      const meta = BUCKETS.find(b=>b.key===k);
+      grupos[k].sort((a,b)=> (prazoEfetivo(a)||'9999').localeCompare(prazoEfetivo(b)||'9999'));
+      mainHtml += `<div class="groupttl">${meta.rot}<span class="count">${grupos[k].length}</span><span class="bar"></span></div>`;
+      grupos[k].forEach(p=> mainHtml += cardHtml(p));
+    });
+    mainHtml += '</main>';
+  }
+  app.innerHTML = `<div class="wrap">${aside}${mainHtml}</div>`;
+
+  app.querySelectorAll('.bucket').forEach(b=> b.onclick=()=>{ const k=b.dataset.b; FILTRO = k==='__all'?null:k; render(); });
+  wireCards(app);
+}
+
+async function sincronizarPeriodo(dias){
+  toast(`Consultando DJEN — últimos ${dias} dia(s)…`);
+  const r = await acao({acao:'sincronizar', dias:dias});
+  toast(r.ok ? `${r.novos} nova(s) publicação(ões) incluída(s)` : 'Erro: '+(r.erro||''));
+  await carregar();
+}
+
+function cardHtml(p){
+  const st = cardStatus(p);
+  const fim = prazoEfetivo(p);
+  const dd = fim ? diasEntre(HOJE, fim) : null;
+  let chip='<span class="chip none">sem prazo</span>';
+  if(dd!==null){
+    const cls = dd<0?'venc':(dd<=3?'urg':'fut');
+    const txt = dd<0?`vencido há ${-dd}d`:(dd===0?'vence hoje':`faltam ${dd}d`);
+    chip=`<span class="chip ${cls}"><span class="d">${esc(fim)}</span> · ${txt}</span>`;
+  }
+  const conf = (p.confianca||'').toLowerCase();
+  const ajustado = p.prazo_fim_ajustado ? ' · <span style="color:var(--conf)">ajustado</span>' : '';
+  return `<div class="card ${st}" id="c${p._row}">
+    <div class="row1">
+      <span class="proc">${esc(p.numero_processo||'s/ nº')}</span>
+      <span class="trib">${esc(p.tribunal||'')} ${p.orgao?'· '+esc(p.orgao):''}</span>
+      ${p.tipo_ato?`<span class="badge tipo">${esc(p.tipo_ato)}</span>`:''}
+      ${(p.cabe_manifestacao===true||p.cabe_manifestacao==='true')?'<span class="manif">cabe manifestação</span>':''}
+      ${conf?`<span class="badge conf-${conf}">confiança ${conf}</span>`:''}
+      ${chip}
+    </div>
+    <div class="resumo">${esc(p.resumo||'(sem resumo)')}</div>
+    <details class="fund">
+      <summary>fundamento, prazo sugerido e teor</summary>
+      <div class="body">
+        <div><span class="lbl">Por que (não) cabe:</span> ${esc(p.fundamento||'—')}</div>
+        <div style="margin-top:6px"><span class="lbl">Prazo sugerido:</span> ${p.prazo_legal_dias?esc(p.prazo_legal_dias)+' dias úteis':'—'} ${p.base_legal?'('+esc(p.base_legal)+')':''} — <em>conferir</em></div>
+        <div style="margin-top:6px"><span class="lbl">Início / fim calculado:</span> ${esc(p.prazo_inicio||'—')} → ${esc(p.prazo_fim_calculado||'—')}${ajustado}</div>
+        ${p.link_djen?`<div style="margin-top:6px"><a href="${esc(p.link_djen)}" target="_blank" rel="noopener">certidão no DJEN ↗</a></div>`:''}
+        <div class="teor">${esc(p.texto||'')}</div>
+      </div>
+    </details>
+    <div class="controls">
+      <div class="field"><label>Ajustar prazo</label>
+        <input type="date" id="dt${p._row}" value="${esc(fim)}"></div>
+      <div class="field" style="flex:1"><label>Comentário</label>
+        <textarea id="cm${p._row}" placeholder="anotação…">${esc(p.comentario||'')}</textarea></div>
+      <div class="actions">
+        <button class="btn-sm btn-save" data-save="${p._row}">Salvar</button>
+        <button class="btn-sm btn-cal" data-cal="${p._row}">Agenda</button>
+        ${st!=='cumprido'?`<button class="btn-sm btn-done" data-done="${p._row}">Cumprido</button>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+async function salvar(row){
+  const dt=document.getElementById('dt'+row).value;
+  const cm=document.getElementById('cm'+row).value;
+  toast('Salvando…');
+  const r=await acao({acao:'salvar', row:Number(row), prazo_fim_ajustado:dt, comentario:cm});
+  if(r.ok){ toast('Salvo'); await carregar(); } else toast('Erro: '+(r.erro||''));
+}
+async function exportar(row){
+  toast('Exportando p/ Agenda…');
+  const r=await acao({acao:'exportarAgenda', row:Number(row)});
+  toast(r.ok?'Evento criado/atualizado na Agenda':'Erro: '+(r.erro||''));
+}
+async function concluir(row){
+  const cm=document.getElementById('cm'+row).value;
+  const r=await acao({acao:'salvar', row:Number(row), status:'cumprido', comentario:cm});
+  if(r.ok){ toast('Marcado como cumprido'); await carregar(); } else toast('Erro: '+(r.erro||''));
+}
+
+function renderSetup(){
+  document.getElementById('app').innerHTML=`<div class="setup">
+    <h2>Falta um passo</h2>
+    <p>Abra o <code>index.html</code> e cole a URL do app da Web do Apps Script na constante <code>API_URL</code>.</p>
+    <p>No Apps Script: <b>Implantar → Nova implantação → App da Web</b>, com “Executar como: eu” e “Quem tem acesso: qualquer pessoa”. Copie a URL terminada em <code>/exec</code>.</p>
+  </div>`;
+}
+
+document.getElementById('btnReload').onclick=carregar;
+document.getElementById('q').oninput=(e)=>{ BUSCA=e.target.value.toLowerCase().trim(); if(VIEW==='registro') render(); };
+document.querySelectorAll('.navbtn').forEach(b=> b.onclick=()=>{ VIEW=b.dataset.view; render(); });
+carregar();
+</script>
+</body>
+</html>
