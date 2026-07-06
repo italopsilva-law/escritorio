@@ -138,9 +138,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/* ================== CONFIGURE AQUI ==================
-   Cole a URL do app da Web do Apps Script (Implantar → Novo → App da Web,
-   "Executar como: você", "Acesso: qualquer pessoa"). Termina em /exec */
+/* ================== CONFIGURE AQUI ================== */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzrizzpTrKsoTE_574mGwbD-VB_-qf9H3RJTDq4SUbcDuGhKPTpxb5ZU0IxErYiEyJj/exec';
 /* =================================================== */
 
@@ -155,7 +153,6 @@ const BUCKETS = [
 
 let DADOS = [], HOJE = null, FILTRO = null, BUSCA = '', VIEW = 'inicio';
 
-// Senha guardada só na sessão do navegador (some ao fechar a aba); nunca no código.
 function getToken(){
   let t = sessionStorage.getItem('djen_token');
   if(!t){ t = prompt('Senha de acesso ao painel:') || ''; if(t) sessionStorage.setItem('djen_token', t); }
@@ -165,7 +162,7 @@ function limparToken(){ sessionStorage.removeItem('djen_token'); }
 
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
 function esc(s){ return String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
-function diasEntre(a,b){ if(!a||!b) return null; return Math.round((new Date(b)-new Date(a))/864e5); }
+function diasEntre(a,b){ if(!a||b===null) return null; return Math.round((new Date(b)-new Date(a))/864e5); }
 
 async function carregar(){
   if(API_URL.indexOf('COLE_AQUI')===0){ renderSetup(); return; }
@@ -180,7 +177,7 @@ async function carregar(){
 
 async function acao(payload){
   payload.token = getToken();
-  const r = await fetch(API_URL, { method:'POST', body: JSON.stringify(payload) }); // text/plain: sem preflight
+  const r = await fetch(API_URL, { method:'POST', body: JSON.stringify(payload) }); 
   const j = await r.json();
   if(j.ok===false && /autoriz/i.test(j.erro||'')){ limparToken(); toast('Senha incorreta'); }
   return j;
@@ -203,7 +200,6 @@ function wireCards(scope){
 }
 
 function renderInicio(app){
-  // Próximos prazos: em aberto (não cumpridos), com data, ordenados do mais próximo.
   const prox = DADOS
     .filter(p=> cardStatus(p)!=='cumprido' && prazoEfetivo(p))
     .sort((a,b)=> prazoEfetivo(a).localeCompare(prazoEfetivo(b)))
@@ -274,12 +270,38 @@ function renderRegistro(app){
   wireCards(app);
 }
 
+// ==== NOVA FUNÇÃO CLIENT-SIDE FETCH ====
 async function sincronizarPeriodo(dias){
-  toast(`Consultando DJEN — últimos ${dias} dia(s)…`);
-  const r = await acao({acao:'sincronizar', dias:dias});
-  toast(r.ok ? `${r.novos} nova(s) publicação(ões) incluída(s)` : 'Erro: '+(r.erro||''));
-  await carregar();
+  toast(`Buscando no DJEN via Worker — últimos ${dias} dia(s)…`);
+  
+  const hoje = new Date();
+  const inicio = new Date(hoje.getTime() - (dias * 864e5));
+  const pad = n => (n < 10 ? '0' : '') + n;
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  
+  const workerUrl = `https://djen-relay.italopsilva.workers.dev/?relay=hsTeHrsLH1l0JbnFI2ohUBZ78mn9Wkd07YBLNtgH&numeroOab=205534&ufOab=RJ&dataDisponibilizacaoInicio=${fmt(inicio)}&dataDisponibilizacaoFim=${fmt(hoje)}&itensPorPagina=100&pagina=1`;
+  
+  try {
+    const res = await fetch(workerUrl);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const items = data.items || data.content || data.rows || [];
+    
+    if (items.length === 0) {
+      toast('Nenhuma publicação encontrada no período.');
+      return;
+    }
+
+    toast(`Processando ${items.length} publicação(ões) com Inteligência Artificial... isso leva uns segundos`);
+    const r = await acao({ acao: 'processar_lote', itens: items });
+    
+    toast(r.ok ? `${r.novos} publicação(ões) nova(s) salva(s) na planilha!` : 'Erro: ' + (r.erro || ''));
+    await carregar();
+  } catch (e) {
+    toast('Erro ao consultar Worker: ' + e.message);
+  }
 }
+// =======================================
 
 function cardHtml(p){
   const st = cardStatus(p);
