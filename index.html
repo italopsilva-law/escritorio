@@ -139,7 +139,7 @@
 
 <script>
 /* ================== CONFIGURE AQUI ================== */
-const API_URL = 'https://script.google.com/macros/s/AKfycbzpF2nQincNsl-c1ULdDy6gGo7eR_Eq_uctM7WPcXPVehds9kkmgtMw0PsZn6GGr_8n/exec';
+const API_URL = 'COLE_AQUI_A_NOVA_URL_DO_WEB_APP';
 /* =================================================== */
 
 const BUCKETS = [
@@ -162,6 +162,7 @@ function limparToken(){ sessionStorage.removeItem('djen_token'); }
 
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
 function esc(s){ return String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function fmtBr(s){ return s ? s.split('-').reverse().join('/') : '—'; }
 function diasEntre(a,b){ if(!a||b===null) return null; return Math.round((new Date(b)-new Date(a))/864e5); }
 
 async function carregar(){
@@ -270,7 +271,6 @@ function renderRegistro(app){
   wireCards(app);
 }
 
-// ==== NOVA FUNÇÃO CLIENT-SIDE FETCH ====
 async function sincronizarPeriodo(dias){
   toast(`Buscando no DJEN via Worker — últimos ${dias} dia(s)…`);
   
@@ -301,7 +301,6 @@ async function sincronizarPeriodo(dias){
     toast('Erro ao consultar Worker: ' + e.message);
   }
 }
-// =======================================
 
 function cardHtml(p){
   const st = cardStatus(p);
@@ -315,6 +314,23 @@ function cardHtml(p){
   }
   const conf = (p.confianca||'').toLowerCase();
   const ajustado = p.prazo_fim_ajustado ? ' · <span style="color:var(--conf)">ajustado</span>' : '';
+
+  // Renderiza opções da IA
+  let opcoesHtml = '';
+  if (p.opcoes_prazo) {
+    try {
+      const ops = JSON.parse(p.opcoes_prazo);
+      if (ops.length > 0) {
+        opcoesHtml = `<div style="margin-top:10px; font-size:12.5px;">
+          <span style="color:var(--muted); text-transform:uppercase; font-size:10.5px; font-weight:600; letter-spacing:0.5px; display:block; margin-bottom:4px;">Sugestões da IA (Clique para aplicar):</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            ${ops.map(o => `<button type="button" class="btn-sm btn-ghost" style="font-size:11.5px; padding:4px 10px;" onclick="document.getElementById('dt${p._row}').value='${o.fim}'">${esc(o.nome)} (${o.dias}d) ➔ ${fmtBr(o.fim)}</button>`).join('')}
+          </div>
+        </div>`;
+      }
+    } catch(e) {}
+  }
+
   return `<div class="card ${st}" id="c${p._row}">
     <div class="row1">
       <span class="proc">${esc(p.numero_processo||'s/ nº')}</span>
@@ -325,16 +341,19 @@ function cardHtml(p){
       ${chip}
     </div>
     <div class="resumo">${esc(p.resumo||'(sem resumo)')}</div>
+    <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">Disp: <strong>${fmtBr(p.data_disponibilizacao)}</strong> | Pub: <strong>${fmtBr(p.data_publicacao)}</strong> | Início contagem: <strong>${fmtBr(p.prazo_inicio)}</strong></div>
+    
     <details class="fund">
-      <summary>fundamento, prazo sugerido e teor</summary>
+      <summary>fundamento, base legal e teor</summary>
       <div class="body">
         <div><span class="lbl">Por que (não) cabe:</span> ${esc(p.fundamento||'—')}</div>
-        <div style="margin-top:6px"><span class="lbl">Prazo sugerido:</span> ${p.prazo_legal_dias?esc(p.prazo_legal_dias)+' dias úteis':'—'} ${p.base_legal?'('+esc(p.base_legal)+')':''} — <em>conferir</em></div>
-        <div style="margin-top:6px"><span class="lbl">Início / fim calculado:</span> ${esc(p.prazo_inicio||'—')} → ${esc(p.prazo_fim_calculado||'—')}${ajustado}</div>
         ${p.link_djen?`<div style="margin-top:6px"><a href="${esc(p.link_djen)}" target="_blank" rel="noopener">certidão no DJEN ↗</a></div>`:''}
         <div class="teor">${esc(p.texto||'')}</div>
       </div>
     </details>
+    
+    ${opcoesHtml}
+
     <div class="controls">
       <div class="field"><label>Ajustar prazo</label>
         <input type="date" id="dt${p._row}" value="${esc(fim)}"></div>
