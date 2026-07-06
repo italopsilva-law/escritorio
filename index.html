@@ -51,7 +51,7 @@
   .groupttl .count{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:400}
   .groupttl .bar{height:2px;flex:1;background:var(--line);border-radius:2px}
 
-  .card{background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:11px;padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .card{background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:11px;padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow); position:relative}
   .card.venc{border-left-color:var(--venc)} .card.urg{border-left-color:var(--urg)}
   .card.fut{border-left-color:var(--fut)} .card.a_confirmar{border-left-color:var(--conf)}
   .card.sem_prazo{border-left-color:var(--neutral)} .card.cumprido{border-left-color:#b8bcc4;opacity:.72}
@@ -90,11 +90,12 @@
   .btn-sm{padding:7px 12px;font-size:12.5px}
   .btn-save{background:var(--ink);color:#fff}
   .btn-cal{background:#e9f3ec;color:var(--fut);border:1px solid #cfe6d7}
+  .btn-draft{background:#fff8eb;color:#a86200;border:1px solid #f6e6cc; font-weight:600}
   .btn-done{background:#f1f0f4;color:#4a4f5a;border:1px solid var(--line)}
   .btn-sm:hover{filter:brightness(.97)}
 
   .empty{text-align:center;color:var(--muted);padding:60px 20px;font-family:var(--serif);font-size:17px}
-  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:9px;font-size:13.5px;box-shadow:0 6px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:9px;font-size:13.5px;box-shadow:0 6px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none; z-index:9999}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
   .setup{max-width:640px;margin:80px auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:28px 32px;box-shadow:var(--shadow)}
   .setup h2{font-family:var(--serif);margin-top:0}
@@ -114,6 +115,16 @@
   .obtn:hover{filter:brightness(1.08)}
   .obtn.sec{background:#eef1f4;color:#3a4152}
   .obtn.sec:hover{background:#e4e8ee;filter:none}
+
+  /* MODAL DE PROGRESSO DA MINUTA */
+  #overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(23,27,38,0.75);backdrop-filter:blur(4px);z-index:9000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+  #overlay.active{opacity:1;pointer-events:all;}
+  .modal-box{background:#fff;padding:32px;border-radius:14px;width:380px;text-align:center;box-shadow:0 12px 48px rgba(0,0,0,0.3);}
+  .modal-box h3{margin:0 0 8px;font-family:var(--serif);font-size:20px;color:var(--ink);}
+  .modal-box p{margin:0 0 24px;color:var(--muted);font-size:13.5px;}
+  .progress-bg{background:#eef1f4;height:12px;border-radius:6px;width:100%;overflow:hidden;position:relative;}
+  .progress-bar{background:var(--accent);height:100%;width:0%;border-radius:6px;transition:width 0.4s ease;}
+  .progress-text{margin-top:12px;font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent);}
 
   @media (max-width:760px){ .wrap{grid-template-columns:1fr} aside{display:none} .chip{margin-left:0} }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -136,6 +147,16 @@
 
 <div id="app"></div>
 <div class="toast" id="toast"></div>
+
+<!-- MODAL DE CARREGAMENTO -->
+<div id="overlay">
+  <div class="modal-box">
+    <h3>Elaborando Minuta</h3>
+    <p>A inteligência artificial está redigindo a petição baseada na demanda da publicação.</p>
+    <div class="progress-bg"><div class="progress-bar" id="pBar"></div></div>
+    <div class="progress-text" id="pText">0%</div>
+  </div>
+</div>
 
 <script>
 /* ================== CONFIGURE AQUI ================== */
@@ -198,6 +219,7 @@ function wireCards(scope){
   scope.querySelectorAll('[data-save]').forEach(btn=> btn.onclick=()=>salvar(btn.dataset.save));
   scope.querySelectorAll('[data-cal]').forEach(btn=> btn.onclick=()=>exportar(btn.dataset.cal));
   scope.querySelectorAll('[data-done]').forEach(btn=> btn.onclick=()=>concluir(btn.dataset.done));
+  scope.querySelectorAll('[data-draft]').forEach(btn=> btn.onclick=()=>gerarMinuta(btn.dataset.draft));
 }
 
 function renderInicio(app){
@@ -315,7 +337,6 @@ function cardHtml(p){
   const conf = (p.confianca||'').toLowerCase();
   const ajustado = p.prazo_fim_ajustado ? ' · <span style="color:var(--conf)">ajustado</span>' : '';
 
-  // Renderiza opções da IA
   let opcoesHtml = '';
   if (p.opcoes_prazo) {
     try {
@@ -330,6 +351,11 @@ function cardHtml(p){
       }
     } catch(e) {}
   }
+
+  // BOTÃO DE MINUTAR: Exibido apenas se a IA detectou que cabe manifestação
+  const btnMinutar = (p.cabe_manifestacao === true || p.cabe_manifestacao === 'true') 
+    ? `<button class="btn-sm btn-draft" data-draft="${p._row}">🪄 Minutar DOCX</button>` 
+    : '';
 
   return `<div class="card ${st}" id="c${p._row}">
     <div class="row1">
@@ -360,12 +386,63 @@ function cardHtml(p){
       <div class="field" style="flex:1"><label>Comentário</label>
         <textarea id="cm${p._row}" placeholder="anotação…">${esc(p.comentario||'')}</textarea></div>
       <div class="actions">
+        ${btnMinutar}
         <button class="btn-sm btn-save" data-save="${p._row}">Salvar</button>
         <button class="btn-sm btn-cal" data-cal="${p._row}">Agenda</button>
         ${st!=='cumprido'?`<button class="btn-sm btn-done" data-done="${p._row}">Cumprido</button>`:''}
       </div>
     </div>
   </div>`;
+}
+
+// ==== NOVA LÓGICA DE GERAÇÃO DA MINUTA ====
+async function gerarMinuta(row){
+  const pub = DADOS.find(p => p._row == row);
+  if(!pub) return;
+
+  const overlay = document.getElementById('overlay');
+  const pBar = document.getElementById('pBar');
+  const pText = document.getElementById('pText');
+  
+  overlay.classList.add('active');
+  let pct = 0;
+  pBar.style.width = '0%';
+  pText.textContent = '0%';
+
+  // Simulação inteligente de carregamento enquanto o servidor processa (chega a no máx 95%)
+  const sim = setInterval(() => {
+    pct += Math.random() * 12; 
+    if(pct > 95) pct = 95;
+    pBar.style.width = pct + '%';
+    pText.textContent = Math.round(pct) + '%';
+  }, 600);
+
+  // Faz a chamada real para o servidor
+  const reqPayload = {
+    acao: 'gerarMinuta',
+    texto: pub.texto,
+    processo: pub.numero_processo,
+    orgao: pub.orgao,
+    tribunal: pub.tribunal
+  };
+
+  const r = await acao(reqPayload);
+  clearInterval(sim);
+
+  if(r.ok && r.docId) {
+    // Pula direto para 100%
+    pBar.style.width = '100%';
+    pText.textContent = '100% - Minuta Pronta!';
+    
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      // Dispara o download automático do Google Docs no formato DOCX (Word)
+      window.location.href = `https://docs.google.com/document/d/${r.docId}/export?format=docx`;
+    }, 1000);
+  } else {
+    overlay.classList.remove('active');
+    toast('Erro ao gerar minuta: ' + (r.erro || 'Desconhecido'));
+  }
 }
 
 async function salvar(row){
